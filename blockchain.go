@@ -12,10 +12,6 @@ func NewBlockchain() *Blockchain {
 	}
 }
 
-func NewGenesisBlock() *Block {
-	return NewBlock("Genesis Block", []byte{})
-}
-
 func (bc *Blockchain) AddBlock(data string) {
 	len := len(bc.blocks) - 1
 	prevBlock := bc.blocks[len]
