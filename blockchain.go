@@ -25,6 +25,7 @@ func dbExists() bool {
 	return true
 }
 
+// BCInstance returns a blockchain instance if any
 func BCInstance() *Blockchain {
 	if !dbExists() {
 		fmt.Println("No existing blockchain found. Create a new one!")
@@ -33,6 +34,10 @@ func BCInstance() *Blockchain {
 
 	var tip []byte
 	db, err := bolt.Open(dbFile, 0600, nil)
+
+	if err != nil {
+		log.Panic(err)
+	}
 
 	err = db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBuket))
@@ -62,6 +67,10 @@ func NewBlockchain(benefician string) *Blockchain {
 	var tip []byte
 	db, err := bolt.Open(dbFile, 0600, nil)
 
+	if err != nil {
+		log.Panic(err)
+	}
+
 	err = db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBuket))
 
@@ -75,7 +84,15 @@ func NewBlockchain(benefician string) *Blockchain {
 				log.Panic(err)
 			}
 			err = b.Put(genesis.Hash, genesis.Serialize())
+
+			if err != nil {
+				log.Panic(err)
+			}
 			err = b.Put([]byte("l"), genesis.Hash)
+
+			if err != nil {
+				log.Panic(err)
+			}
 			tip = genesis.Hash
 		}
 		return nil
@@ -147,8 +164,8 @@ func (bc *Blockchain) FindUTXO(address string) []TXOutput {
 	return UTXOs
 }
 
-// AddBlock fn
-func (bc *Blockchain) AddBlock(txs []*Transaction, data string) {
+// MineBlock fn
+func (bc *Blockchain) MineBlock(txs []*Transaction) {
 	var lastHash []byte
 
 	err := bc.db.View(func(tx *bolt.Tx) error {
@@ -162,7 +179,7 @@ func (bc *Blockchain) AddBlock(txs []*Transaction, data string) {
 		log.Panic(err)
 	}
 
-	newBlock := NewBlock(txs, data, lastHash)
+	newBlock := NewBlock(txs, lastHash)
 
 	err = bc.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBuket))
@@ -173,8 +190,15 @@ func (bc *Blockchain) AddBlock(txs []*Transaction, data string) {
 		}
 
 		err = b.Put([]byte("l"), newBlock.Hash)
+
+		if err != nil {
+			log.Panic(err)
+		}
 		bc.tip = newBlock.Hash
 
 		return nil
 	})
+	if err != nil {
+		log.Panic(err)
+	}
 }

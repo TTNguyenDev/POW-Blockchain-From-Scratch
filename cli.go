@@ -1,12 +1,15 @@
 package main
 
 import (
+	"encoding/hex"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 )
 
+// CLI struct
 type CLI struct{}
 
 func (cli *CLI) createBlockchain(benefician string) {
@@ -20,7 +23,6 @@ func (cli *CLI) printUsage() {
 	fmt.Println("Usage:")
 	fmt.Println(" newblockchain -address ADDRESS - new blockchain with benefician's address")
 	fmt.Println(" getbalance -address ADDRESS - sum of UTXOs of the given address")
-	fmt.Println(" addblock -data BLOCK_DATA - add a block to the blockchain")
 	fmt.Println(" printchain - print all the blocks of the blockchain")
 }
 
@@ -37,22 +39,27 @@ func (cli *CLI) Run() {
 
 	newBlockchainCmd := flag.NewFlagSet("newblockchain", flag.ExitOnError)
 	getBalanceCmd := flag.NewFlagSet("getbalance", flag.ExitOnError)
-	addBlockCmd := flag.NewFlagSet("addblock", flag.ExitOnError)
 	printChainCmd := flag.NewFlagSet("printchain", flag.ExitOnError)
 
 	newBlockchainData := newBlockchainCmd.String("address", "", "Address")
 	getBalanceData := getBalanceCmd.String("address", "", "Address")
-	addBlockData := addBlockCmd.String("data", "", "Block data")
 
 	switch os.Args[1] {
 	case "newblockchain":
-		newBlockchainCmd.Parse(os.Args[2:])
-	case "addblock":
-		addBlockCmd.Parse(os.Args[2:])
+		err := newBlockchainCmd.Parse(os.Args[2:])
+		if err != nil {
+			log.Panic(err)
+		}
 	case "printchain":
-		printChainCmd.Parse(os.Args[2:])
+		err := printChainCmd.Parse(os.Args[2:])
+		if err != nil {
+			log.Panic(err)
+		}
 	case "getbalance":
-		getBalanceCmd.Parse(os.Args[2:])
+		err := getBalanceCmd.Parse(os.Args[2:])
+		if err != nil {
+			log.Panic(err)
+		}
 	default:
 		cli.printUsage()
 		os.Exit(1)
@@ -72,14 +79,6 @@ func (cli *CLI) Run() {
 			os.Exit(1)
 		}
 		cli.getBalance(*getBalanceData)
-	}
-
-	if addBlockCmd.Parsed() {
-		if *addBlockData == "" {
-			addBlockCmd.Usage()
-			os.Exit(1)
-		}
-		cli.addBlock(*addBlockData)
 	}
 
 	if printChainCmd.Parsed() {
@@ -102,13 +101,6 @@ func (cli *CLI) getBalance(address string) {
 	fmt.Printf("Balance of %s: %d\n", address, balance)
 }
 
-func (cli *CLI) addBlock(data string) {
-	// bc := BCInstance()
-	// defer bc.db.Close()
-	// bc.AddBlock(data)
-	fmt.Println("A new block is Added")
-}
-
 func (cli *CLI) printChain() {
 	bc := BCInstance()
 	defer bc.db.Close()
@@ -122,7 +114,9 @@ func (cli *CLI) printChain() {
 			break
 		}
 		fmt.Printf("Prev hash of block: %x\n", b.PrevBlockHash)
-		fmt.Printf("Data:  %s\n", b.Data)
+		for _, tx := range b.Transactions {
+			fmt.Printf("Transaction: %s\n", hex.EncodeToString(tx.ID))
+		}
 		fmt.Printf("Block Hash: %x\n", b.Hash)
 		pow := NewProofOfWork(b)
 		fmt.Printf("IsValid: %s \n\n", strconv.FormatBool(pow.Validate()))

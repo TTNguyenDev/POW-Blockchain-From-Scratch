@@ -8,18 +8,19 @@ import (
 	"time"
 )
 
+// Block - A definition for this simple implementation
 type Block struct {
 	//TODO: Use merkle tree to store transactions
 	Transactions  []*Transaction
 	TimeStamp     int64
-	Data          []byte
 	PrevBlockHash []byte
 	Hash          []byte
 	Nonce         int
 }
 
-func NewBlock(txs []*Transaction, data string, prevBlockHash []byte) *Block {
-	block := &Block{txs, time.Now().Unix(), []byte(data), prevBlockHash, []byte{}, 0}
+// NewBlock creates a new block with given txs
+func NewBlock(txs []*Transaction, prevBlockHash []byte) *Block {
+	block := &Block{txs, time.Now().Unix(), prevBlockHash, []byte{}, 0}
 	pow := NewProofOfWork(block)
 	nonce, hash := pow.Run()
 	block.Hash = hash
@@ -27,11 +28,12 @@ func NewBlock(txs []*Transaction, data string, prevBlockHash []byte) *Block {
 	return block
 }
 
+// NewGenesisBlock creates genesis data for the blockchain
 func NewGenesisBlock(coinbase *Transaction) *Block {
-	return NewBlock([]*Transaction{coinbase}, "Genesis Block", []byte{})
+	return NewBlock([]*Transaction{coinbase}, []byte{})
 }
 
-// Serialize & Deserialize data
+// Serialize data
 func (b *Block) Serialize() []byte {
 	var result bytes.Buffer
 	encoder := gob.NewEncoder(&result)
@@ -44,7 +46,8 @@ func (b *Block) Serialize() []byte {
 	return result.Bytes()
 }
 
-func DeserializeBlock(d []byte) *Block {
+// Deserialize data
+func Deserialize(d []byte) *Block {
 	var block Block
 
 	decoder := gob.NewDecoder(bytes.NewReader(d))
@@ -57,6 +60,7 @@ func DeserializeBlock(d []byte) *Block {
 	return &block
 }
 
+// HashTransactions creates a single sha256 of all hash sha256 transactions
 func (b *Block) HashTransactions() []byte {
 	var txHashes [][]byte
 	var txHash [32]byte
