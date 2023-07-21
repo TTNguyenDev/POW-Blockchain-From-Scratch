@@ -61,3 +61,17 @@ func NewCoinbaseTX(to, data string) *Transaction {
 
 	return &tx
 }
+
+//UTXO
+
+func (in *TXInput) CanUnlockOutputWith(unlockingData string) bool {
+	return in.ScriptSig == unlockingData
+}
+
+func (out *TXOutput) CanBeUnlockedWith(unlockingData string) bool {
+	return out.ScriptPubKey == unlockingData
+}
+
+func (tx Transaction) IsCoinBase() bool {
+	return len(tx.Vin) == 1 && len(tx.Vin[0].Txid) == 0 && tx.Vin[0].Vout == -1
+}

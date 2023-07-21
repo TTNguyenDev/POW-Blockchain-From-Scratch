@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -86,6 +87,64 @@ func NewBlockchain(benefician string) *Blockchain {
 
 	bc := Blockchain{tip, db}
 	return &bc
+}
+
+// FindUnspentTransactions ..
+func (bc *Blockchain) FindUnspentTransactions(address string) []Transaction {
+	var unspentTxs []Transaction
+	spentTXOs := make(map[string][]int)
+	bci := bc.Iterator()
+
+	for {
+		b := bci.Next()
+
+		for _, tx := range b.Transactions {
+			txID := hex.EncodeToString(tx.ID)
+
+		Outputs:
+			for outIdx, out := range tx.Vout {
+				if spentTXOs[txID] != nil {
+					for _, spentOut := range spentTXOs[txID] {
+						if spentOut == outIdx {
+							continue Outputs
+						}
+					}
+				}
+				// Check the owner of this output value
+				if out.CanBeUnlockedWith(address) {
+					unspentTxs = append(unspentTxs, *tx)
+				}
+			}
+
+			if !tx.IsCoinBase() {
+				for _, in := range tx.Vin {
+					if in.CanUnlockOutputWith(address) {
+						inTxID := hex.EncodeToString(in.Txid)
+						spentTXOs[inTxID] = append(spentTXOs[inTxID], in.Vout)
+					}
+				}
+			}
+		}
+		if len(b.PrevBlockHash) == 0 {
+			break
+		}
+	}
+	return unspentTxs
+}
+
+// FindUTXO ..
+func (bc *Blockchain) FindUTXO(address string) []TXOutput {
+	var UTXOs []TXOutput
+	unspentTxs := bc.FindUnspentTransactions(address)
+
+	for _, tx := range unspentTxs {
+		for _, out := range tx.Vout {
+			if out.CanBeUnlockedWith(address) {
+				UTXOs = append(UTXOs, out)
+			}
+		}
+	}
+	return UTXOs
 }
 
 // AddBlock fn

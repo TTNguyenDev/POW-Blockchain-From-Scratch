@@ -19,6 +19,7 @@ func (cli *CLI) createBlockchain(benefician string) {
 func (cli *CLI) printUsage() {
 	fmt.Println("Usage:")
 	fmt.Println(" newblockchain -address ADDRESS - new blockchain with benefician's address")
+	fmt.Println(" getbalance -address ADDRESS - sum of UTXOs of the given address")
 	fmt.Println(" addblock -data BLOCK_DATA - add a block to the blockchain")
 	fmt.Println(" printchain - print all the blocks of the blockchain")
 }
@@ -29,14 +30,18 @@ func (cli *CLI) validateArgs() {
 		os.Exit(1)
 	}
 }
+
+// Run ...
 func (cli *CLI) Run() {
 	cli.validateArgs()
 
 	newBlockchainCmd := flag.NewFlagSet("newblockchain", flag.ExitOnError)
+	getBalanceCmd := flag.NewFlagSet("getbalance", flag.ExitOnError)
 	addBlockCmd := flag.NewFlagSet("addblock", flag.ExitOnError)
 	printChainCmd := flag.NewFlagSet("printchain", flag.ExitOnError)
 
 	newBlockchainData := newBlockchainCmd.String("address", "", "Address")
+	getBalanceData := getBalanceCmd.String("address", "", "Address")
 	addBlockData := addBlockCmd.String("data", "", "Block data")
 
 	switch os.Args[1] {
@@ -46,6 +51,8 @@ func (cli *CLI) Run() {
 		addBlockCmd.Parse(os.Args[2:])
 	case "printchain":
 		printChainCmd.Parse(os.Args[2:])
+	case "getbalance":
+		getBalanceCmd.Parse(os.Args[2:])
 	default:
 		cli.printUsage()
 		os.Exit(1)
@@ -59,6 +66,14 @@ func (cli *CLI) Run() {
 		cli.createBlockchain(*newBlockchainData)
 	}
 
+	if getBalanceCmd.Parsed() {
+		if *getBalanceData == "" {
+			getBalanceCmd.Usage()
+			os.Exit(1)
+		}
+		cli.getBalance(*getBalanceData)
+	}
+
 	if addBlockCmd.Parsed() {
 		if *addBlockData == "" {
 			addBlockCmd.Usage()
@@ -70,6 +85,21 @@ func (cli *CLI) Run() {
 	if printChainCmd.Parsed() {
 		cli.printChain()
 	}
+}
+
+// getBalance
+func (cli *CLI) getBalance(address string) {
+	bc := BCInstance()
+	defer bc.db.Close()
+
+	balance := 0
+	UTXOs := bc.FindUTXO(address)
+
+	for _, out := range UTXOs {
+		balance += out.Value
+	}
+
+	fmt.Printf("Balance of %s: %d\n", address, balance)
 }
 
 func (cli *CLI) addBlock(data string) {
