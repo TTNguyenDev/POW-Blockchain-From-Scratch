@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"os"
 
 	"github.com/boltdb/bolt"
 )
@@ -15,22 +17,58 @@ type Blockchain struct {
 	db  *bolt.DB
 }
 
+func dbExists() bool {
+	if _, err := os.Stat(dbFile); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
+func BCInstance() *Blockchain {
+	if !dbExists() {
+		fmt.Println("No existing blockchain found. Create a new one!")
+		os.Exit(1)
+	}
+
+	var tip []byte
+	db, err := bolt.Open(dbFile, 0600, nil)
+
+	err = db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(blocksBuket))
+		tip = b.Get([]byte("l"))
+
+		if tip == nil {
+			log.Panic("Latest blockhash doesn't exist")
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	bc := Blockchain{tip, db}
+	return &bc
+}
+
 // NewBlockchain fn
-func NewBlockchain() *Blockchain {
+func NewBlockchain(benefician string) *Blockchain {
+	if dbExists() {
+		fmt.Println("Blockchain already exists.")
+		os.Exit(1)
+	}
 	var tip []byte
 	db, err := bolt.Open(dbFile, 0600, nil)
 
 	err = db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBuket))
 
-		if err != nil {
-			log.Panic(err)
-		}
-
 		if b != nil {
 			tip = b.Get([]byte("l")) //Last block hash
 		} else {
-			genesis := NewGenesisBlock()
+			coinbaseTx := NewCoinbaseTX(benefician, "")
+			genesis := NewGenesisBlock(coinbaseTx)
 			b, err := tx.CreateBucket([]byte(blocksBuket))
 			if err != nil {
 				log.Panic(err)
@@ -42,12 +80,16 @@ func NewBlockchain() *Blockchain {
 		return nil
 	})
 
+	if err != nil {
+		log.Panic(err)
+	}
+
 	bc := Blockchain{tip, db}
 	return &bc
 }
 
 // AddBlock fn
-func (bc *Blockchain) AddBlock(data string) {
+func (bc *Blockchain) AddBlock(txs []*Transaction, data string) {
 	var lastHash []byte
 
 	err := bc.db.View(func(tx *bolt.Tx) error {
@@ -61,7 +103,7 @@ func (bc *Blockchain) AddBlock(data string) {
 		log.Panic(err)
 	}
 
-	newBlock := NewBlock(data, lastHash)
+	newBlock := NewBlock(txs, data, lastHash)
 
 	err = bc.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBuket))
