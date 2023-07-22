@@ -106,6 +106,30 @@ func NewBlockchain(benefician string) *Blockchain {
 	return &bc
 }
 
+// FindSpendableTransactions -
+func (bc *Blockchain) FindSpendableTransactions(address string, amount int) (int, map[string][]int) {
+	txs := make(map[string][]int)
+	utxos := bc.FindUnspentTransactions(address)
+	accumulated := 0
+
+Work:
+	for _, tx := range utxos {
+		txID := hex.EncodeToString(tx.ID)
+
+		for id, out := range tx.Vout {
+			if out.CanBeUnlockedWith(address) && accumulated < amount {
+				accumulated += out.Value
+				txs[txID] = append(txs[txID], id)
+
+				if accumulated >= amount {
+					break Work
+				}
+			}
+		}
+	}
+	return accumulated, txs
+}
+
 // FindUnspentTransactions ..
 func (bc *Blockchain) FindUnspentTransactions(address string) []Transaction {
 	var unspentTxs []Transaction

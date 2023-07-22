@@ -22,6 +22,7 @@ func (cli *CLI) createBlockchain(benefician string) {
 func (cli *CLI) printUsage() {
 	fmt.Println("Usage:")
 	fmt.Println(" newblockchain -address ADDRESS - new blockchain with benefician's address")
+	fmt.Println(" sendcoins -from ADDRESS -to ADDRESS -amount AMOUNT - send coin function")
 	fmt.Println(" getbalance -address ADDRESS - sum of UTXOs of the given address")
 	fmt.Println(" printchain - print all the blocks of the blockchain")
 }
@@ -39,10 +40,15 @@ func (cli *CLI) Run() {
 
 	newBlockchainCmd := flag.NewFlagSet("newblockchain", flag.ExitOnError)
 	getBalanceCmd := flag.NewFlagSet("getbalance", flag.ExitOnError)
+	sendCoinsCmd := flag.NewFlagSet("sendcoins", flag.ExitOnError)
 	printChainCmd := flag.NewFlagSet("printchain", flag.ExitOnError)
 
 	newBlockchainData := newBlockchainCmd.String("address", "", "Address")
 	getBalanceData := getBalanceCmd.String("address", "", "Address")
+
+	fromAddressData := sendCoinsCmd.String("from", "", "From address")
+	toAddressData := sendCoinsCmd.String("to", "", "To address")
+	amountData := sendCoinsCmd.Int("amount", 0, "Amount")
 
 	switch os.Args[1] {
 	case "newblockchain":
@@ -50,40 +56,55 @@ func (cli *CLI) Run() {
 		if err != nil {
 			log.Panic(err)
 		}
-	case "printchain":
-		err := printChainCmd.Parse(os.Args[2:])
-		if err != nil {
-			log.Panic(err)
-		}
-	case "getbalance":
-		err := getBalanceCmd.Parse(os.Args[2:])
-		if err != nil {
-			log.Panic(err)
-		}
-	default:
-		cli.printUsage()
-		os.Exit(1)
-	}
 
-	if newBlockchainCmd.Parsed() {
 		if *newBlockchainData == "" {
 			newBlockchainCmd.Usage()
 			os.Exit(1)
 		}
 		cli.createBlockchain(*newBlockchainData)
-	}
+	case "sendcoins":
+		err := sendCoinsCmd.Parse(os.Args[2:])
+		if err != nil {
+			log.Panic(err)
+		}
 
-	if getBalanceCmd.Parsed() {
+		if *fromAddressData == "" || *toAddressData == "" || *amountData == 0 {
+			sendCoinsCmd.Usage()
+			os.Exit(1)
+		}
+		cli.sendCoins(*fromAddressData, *toAddressData, *amountData)
+	case "printchain":
+		err := printChainCmd.Parse(os.Args[2:])
+		if err != nil {
+			log.Panic(err)
+		}
+		cli.printChain()
+	case "getbalance":
+		err := getBalanceCmd.Parse(os.Args[2:])
+		if err != nil {
+			log.Panic(err)
+		}
+
 		if *getBalanceData == "" {
 			getBalanceCmd.Usage()
 			os.Exit(1)
 		}
 		cli.getBalance(*getBalanceData)
+	default:
+		cli.printUsage()
+		os.Exit(1)
 	}
+}
 
-	if printChainCmd.Parsed() {
-		cli.printChain()
-	}
+// sendCoins ...
+func (cli *CLI) sendCoins(from, to string, amount int) {
+	bc := BCInstance()
+	defer bc.db.Close()
+
+	//Build Input for this transaction
+	tx := NewUTXOTransaction(from, to, amount, bc)
+	bc.MineBlock([]*Transaction{tx})
+	fmt.Println("Success!")
 }
 
 // getBalance
