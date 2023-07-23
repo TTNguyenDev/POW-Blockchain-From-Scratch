@@ -6,12 +6,14 @@ import (
 	"encoding/gob"
 	"log"
 	"time"
+
+	"blockchain_from_scratch/blockchain/transaction"
 )
 
 // Block - A definition for this simple implementation
 type Block struct {
 	//TODO: Use merkle tree to store transactions
-	Transactions  []*Transaction
+	Transactions  []*transaction.Transaction
 	TimeStamp     int64
 	PrevBlockHash []byte
 	Hash          []byte
@@ -19,7 +21,7 @@ type Block struct {
 }
 
 // NewBlock creates a new block with given txs
-func NewBlock(txs []*Transaction, prevBlockHash []byte) *Block {
+func NewBlock(txs []*transaction.Transaction, prevBlockHash []byte) *Block {
 	block := &Block{txs, time.Now().Unix(), prevBlockHash, []byte{}, 0}
 	pow := NewProofOfWork(block)
 	nonce, hash := pow.Run()
@@ -29,8 +31,8 @@ func NewBlock(txs []*Transaction, prevBlockHash []byte) *Block {
 }
 
 // NewGenesisBlock creates genesis data for the blockchain
-func NewGenesisBlock(coinbase *Transaction) *Block {
-	return NewBlock([]*Transaction{coinbase}, []byte{})
+func NewGenesisBlock(coinbase *transaction.Transaction) *Block {
+	return NewBlock([]*transaction.Transaction{coinbase}, []byte{})
 }
 
 // Serialize data

@@ -1,4 +1,4 @@
-package blockchain
+package transaction
 
 import (
 	"bytes"
@@ -20,4 +20,10 @@ func (out *TXOutput) Lock(address []byte) {
 
 func (out *TXOutput) IsLockedWithKey(pubHash []byte) bool {
 	return bytes.Equal(out.PubKeyHash, pubHash)
+}
+
+func NewTxOutput(value int, address string) *TXOutput {
+	txo := &TXOutput{value, nil}
+	txo.Lock([]byte(address))
+	return txo
 }

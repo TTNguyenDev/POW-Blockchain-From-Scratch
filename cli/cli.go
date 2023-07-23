@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"blockchain_from_scratch/blockchain"
+	"blockchain_from_scratch/utils"
 )
 
 // CLI struct
@@ -100,12 +101,12 @@ func (cli *CLI) Run() {
 
 // sendCoins ...
 func (cli *CLI) sendCoins(from, to string, amount int) {
-	bc := blockchain.BCInstance()
-	defer bc.DB().Close()
-
-	//Build Input for this transaction
-	tx := blockchain.NewUTXOTransaction(from, to, amount, bc)
-	bc.MineBlock([]*blockchain.Transaction{tx})
+	// bc := blockchain.BCInstance()
+	// defer bc.DB().Close()
+	//
+	// //Build Input for this transaction
+	// tx := blockchain.NewUTXOTransaction(from, to, amount, bc)
+	// bc.MineBlock([]*transaction.Transaction{tx})
 	fmt.Println("Success!")
 }
 
@@ -115,7 +116,9 @@ func (cli *CLI) getBalance(address string) {
 	defer bc.DB().Close()
 
 	balance := 0
-	UTXOs := bc.FindUTXO(address)
+	pubKeyHash := utils.Base58Decode([]byte(address))
+	pubKeyHash = pubKeyHash[1 : len(pubKeyHash)-4]
+	UTXOs := bc.FindUTXO(pubKeyHash)
 
 	for _, out := range UTXOs {
 		balance += out.Value

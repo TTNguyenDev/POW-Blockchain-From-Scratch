@@ -7,6 +7,8 @@ import (
 	"os"
 
 	"github.com/boltdb/bolt"
+
+	"blockchain_from_scratch/blockchain/transaction"
 )
 
 const dbFile = "db/blockchain.db"
@@ -81,7 +83,7 @@ func NewBlockchain(benefician string) *Blockchain {
 		if b != nil {
 			tip = b.Get([]byte("l")) //Last block hash
 		} else {
-			coinbaseTx := NewCoinbaseTX(benefician, "")
+			coinbaseTx := transaction.NewCoinbaseTX(benefician, "")
 			genesis := NewGenesisBlock(coinbaseTx)
 			b, err := tx.CreateBucket([]byte(blocksBuket))
 			if err != nil {
@@ -111,9 +113,9 @@ func NewBlockchain(benefician string) *Blockchain {
 }
 
 // FindSpendableTransactions -
-func (bc *Blockchain) FindSpendableTransactions(address string, amount int) (int, map[string][]int) {
+func (bc *Blockchain) FindSpendableTransactions(pubHash []byte, amount int) (int, map[string][]int) {
 	txs := make(map[string][]int)
-	utxos := bc.FindUnspentTransactions(address)
+	utxos := bc.FindUnspentTransactions(pubHash)
 	accumulated := 0
 
 Work:
@@ -121,7 +123,7 @@ Work:
 		txID := hex.EncodeToString(tx.ID)
 
 		for id, out := range tx.Vout {
-			if out.CanBeUnlockedWith(address) && accumulated < amount {
+			if out.IsLockedWithKey(pubHash) && accumulated < amount {
 				accumulated += out.Value
 				txs[txID] = append(txs[txID], id)
 
@@ -135,8 +137,8 @@ Work:
 }
 
 // FindUnspentTransactions ..
-func (bc *Blockchain) FindUnspentTransactions(address string) []Transaction {
-	var unspentTxs []Transaction
+func (bc *Blockchain) FindUnspentTransactions(pubHash []byte) []transaction.Transaction {
+	var unspentTxs []transaction.Transaction
 	spentTXOs := make(map[string][]int)
 	bci := bc.Iterator()
 
@@ -156,14 +158,14 @@ func (bc *Blockchain) FindUnspentTransactions(address string) []Transaction {
 					}
 				}
 				// Check the owner of this output value
-				if out.CanBeUnlockedWith(address) {
+				if out.IsLockedWithKey(pubHash) {
 					unspentTxs = append(unspentTxs, *tx)
 				}
 			}
 
 			if !tx.IsCoinBase() {
 				for _, in := range tx.Vin {
-					if in.CanUnlockOutputWith(address) {
+					if in.UsesKey(pubHash) {
 						inTxID := hex.EncodeToString(in.Txid)
 						spentTXOs[inTxID] = append(spentTXOs[inTxID], in.Vout)
 					}
@@ -178,13 +180,13 @@ func (bc *Blockchain) FindUnspentTransactions(address string) []Transaction {
 }
 
 // FindUTXO ..
-func (bc *Blockchain) FindUTXO(address string) []TXOutput {
-	var UTXOs []TXOutput
-	unspentTxs := bc.FindUnspentTransactions(address)
+func (bc *Blockchain) FindUTXO(pubHash []byte) []transaction.TXOutput {
+	var UTXOs []transaction.TXOutput
+	unspentTxs := bc.FindUnspentTransactions(pubHash)
 
 	for _, tx := range unspentTxs {
 		for _, out := range tx.Vout {
-			if out.CanBeUnlockedWith(address) {
+			if out.IsLockedWithKey(pubHash) {
 				UTXOs = append(UTXOs, out)
 			}
 		}
@@ -193,7 +195,7 @@ func (bc *Blockchain) FindUTXO(address string) []TXOutput {
 }
 
 // MineBlock fn
-func (bc *Blockchain) MineBlock(txs []*Transaction) {
+func (bc *Blockchain) MineBlock(txs []*transaction.Transaction) {
 	var lastHash []byte
 
 	err := bc.db.View(func(tx *bolt.Tx) error {
@@ -230,3 +232,36 @@ func (bc *Blockchain) MineBlock(txs []*Transaction) {
 		log.Panic(err)
 	}
 }
+
+// NewUTXOTransaction -
+// func NewUTXOTransaction(from, to string, amount int, bc *Blockchain) *transaction.Transaction {
+// 	var inputs []transaction.TXInput
+// 	var outputs []transaction.TXOutput
+//
+// 	wallet := wallet.Wallets.
+// 	accumulated, validOutputs := bc.FindSpendableTransactions(from, amount)
+//
+// 	if accumulated < amount {
+// 		log.Panic("ERROR: Not enough funds")
+// 	}
+//
+// 	//Build a list of inputs
+// 	for txid, outs := range validOutputs {
+// 		txID, _ := hex.DecodeString(txid)
+//
+// 		for _, out := range outs {
+// 			inputs = append(inputs, transaction.TXInput{txID, out, from})
+// 		}
+// 	}
+//
+// 	//Build a list of output
+// 	outputs = append(outputs, *transaction.NewTxOutput(amount, to))
+// 	if accumulated > amount {
+// 		outputs = append(outputs, *transaction.NewTxOutput(accumulated-amount, from)) //Refund
+// 	}
+//
+// 	tx := transaction.Transaction{nil, inputs, outputs}
+// 	tx.SetID()
+//
+// 	return &tx
+// }
