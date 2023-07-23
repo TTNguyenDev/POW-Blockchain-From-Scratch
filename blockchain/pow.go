@@ -1,4 +1,4 @@
-package main
+package blockchain
 
 import (
 	"bytes"
@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+
+	"blockchain_from_scratch/utils"
 )
 
 var (
@@ -35,9 +37,9 @@ func (pow *ProofOfWork) prepareData(nonce int) []byte {
 		[][]byte{
 			pow.block.PrevBlockHash,
 			pow.block.HashTransactions(),
-			IntToHex(pow.block.TimeStamp),
-			IntToHex(int64(targetBits)),
-			IntToHex(int64(nonce)),
+			utils.IntToHex(pow.block.TimeStamp),
+			utils.IntToHex(int64(targetBits)),
+			utils.IntToHex(int64(nonce)),
 		},
 		[]byte{},
 	)

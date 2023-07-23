@@ -1,6 +1,8 @@
 package main
 
+import "blockchain_from_scratch/cli"
+
 func main() {
-	cli := CLI{}
+	cli := cli.CLI{}
 	cli.Run()
 }

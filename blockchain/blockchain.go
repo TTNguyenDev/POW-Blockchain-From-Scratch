@@ -1,4 +1,4 @@
-package main
+package blockchain
 
 import (
 	"encoding/hex"
@@ -9,7 +9,7 @@ import (
 	"github.com/boltdb/bolt"
 )
 
-const dbFile = "blockchain.db"
+const dbFile = "db/blockchain.db"
 const blocksBuket = "blocks"
 
 // Blockchain struct
@@ -56,6 +56,10 @@ func BCInstance() *Blockchain {
 
 	bc := Blockchain{tip, db}
 	return &bc
+}
+
+func (bc *Blockchain) DB() *bolt.DB {
+	return bc.db
 }
 
 // NewBlockchain fn

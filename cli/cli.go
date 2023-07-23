@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"encoding/hex"
@@ -7,14 +7,16 @@ import (
 	"log"
 	"os"
 	"strconv"
+
+	"blockchain_from_scratch/blockchain"
 )
 
 // CLI struct
 type CLI struct{}
 
 func (cli *CLI) createBlockchain(benefician string) {
-	bc := NewBlockchain(benefician)
-	bc.db.Close()
+	bc := blockchain.NewBlockchain(benefician)
+	bc.DB().Close()
 	fmt.Println("Done!")
 
 }
@@ -98,19 +100,19 @@ func (cli *CLI) Run() {
 
 // sendCoins ...
 func (cli *CLI) sendCoins(from, to string, amount int) {
-	bc := BCInstance()
-	defer bc.db.Close()
+	bc := blockchain.BCInstance()
+	defer bc.DB().Close()
 
 	//Build Input for this transaction
-	tx := NewUTXOTransaction(from, to, amount, bc)
-	bc.MineBlock([]*Transaction{tx})
+	tx := blockchain.NewUTXOTransaction(from, to, amount, bc)
+	bc.MineBlock([]*blockchain.Transaction{tx})
 	fmt.Println("Success!")
 }
 
 // getBalance
 func (cli *CLI) getBalance(address string) {
-	bc := BCInstance()
-	defer bc.db.Close()
+	bc := blockchain.BCInstance()
+	defer bc.DB().Close()
 
 	balance := 0
 	UTXOs := bc.FindUTXO(address)
@@ -123,8 +125,8 @@ func (cli *CLI) getBalance(address string) {
 }
 
 func (cli *CLI) printChain() {
-	bc := BCInstance()
-	defer bc.db.Close()
+	bc := blockchain.BCInstance()
+	defer bc.DB().Close()
 	bci := bc.Iterator()
 
 	fmt.Printf("Querying blockchain data:\n")
@@ -139,7 +141,7 @@ func (cli *CLI) printChain() {
 			fmt.Printf("Transaction: %s\n", hex.EncodeToString(tx.ID))
 		}
 		fmt.Printf("Block Hash: %x\n", b.Hash)
-		pow := NewProofOfWork(b)
+		pow := blockchain.NewProofOfWork(b)
 		fmt.Printf("IsValid: %s \n\n", strconv.FormatBool(pow.Validate()))
 	}
 }
