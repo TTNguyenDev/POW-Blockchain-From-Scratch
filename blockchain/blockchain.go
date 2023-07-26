@@ -1,7 +1,10 @@
 package blockchain
 
 import (
+	"bytes"
+	"crypto/ecdsa"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -9,6 +12,7 @@ import (
 	"github.com/boltdb/bolt"
 
 	"blockchain_from_scratch/blockchain/transaction"
+	"blockchain_from_scratch/wallet"
 )
 
 const dbFile = "db/blockchain.db"
@@ -209,6 +213,11 @@ func (bc *Blockchain) MineBlock(txs []*transaction.Transaction) {
 		log.Panic(err)
 	}
 
+	for _, tx := range txs {
+		if !bc.VerifyTransaction(tx) {
+			log.Panic("Error: Invalid Transaction")
+		}
+	}
 	newBlock := NewBlock(txs, lastHash)
 
 	err = bc.db.Update(func(tx *bolt.Tx) error {
@@ -233,35 +242,86 @@ func (bc *Blockchain) MineBlock(txs []*transaction.Transaction) {
 	}
 }
 
+func (bc *Blockchain) FindTransaction(ID []byte) (transaction.Transaction, error) {
+	bci := bc.Iterator()
+
+	for {
+		block := bci.Next()
+		for _, tx := range block.Transactions {
+			if bytes.Compare(tx.ID, ID) == 0 /*equally*/ {
+				return *tx, nil
+			}
+		}
+
+		if len(block.PrevBlockHash) == 0 {
+			break
+		}
+	}
+	return transaction.Transaction{}, errors.New("Transaction is not found")
+}
+
+func (bc *Blockchain) SignTransaction(tx *transaction.Transaction, privKey ecdsa.PrivateKey) {
+	prevTXs := make(map[string]transaction.Transaction)
+
+	for _, vin := range tx.Vin {
+		prevTX, err := bc.FindTransaction(vin.Txid)
+		if err != nil {
+			log.Panic(err)
+		}
+		prevTXs[hex.EncodeToString(prevTX.ID)] = prevTX
+	}
+	tx.Sign(privKey, prevTXs)
+}
+
+func (bc *Blockchain) VerifyTransaction(tx *transaction.Transaction) bool {
+	prevTXs := make(map[string]transaction.Transaction)
+
+	for _, vin := range tx.Vin {
+		prevTX, err := bc.FindTransaction(vin.Txid)
+		if err != nil {
+			log.Panic(err)
+		}
+		prevTXs[hex.EncodeToString(prevTX.ID)] = prevTX
+	}
+	return tx.Verify(prevTXs)
+}
+
 // NewUTXOTransaction -
-// func NewUTXOTransaction(from, to string, amount int, bc *Blockchain) *transaction.Transaction {
-// 	var inputs []transaction.TXInput
-// 	var outputs []transaction.TXOutput
-//
-// 	wallet := wallet.Wallets.
-// 	accumulated, validOutputs := bc.FindSpendableTransactions(from, amount)
-//
-// 	if accumulated < amount {
-// 		log.Panic("ERROR: Not enough funds")
-// 	}
-//
-// 	//Build a list of inputs
-// 	for txid, outs := range validOutputs {
-// 		txID, _ := hex.DecodeString(txid)
-//
-// 		for _, out := range outs {
-// 			inputs = append(inputs, transaction.TXInput{txID, out, from})
-// 		}
-// 	}
-//
-// 	//Build a list of output
-// 	outputs = append(outputs, *transaction.NewTxOutput(amount, to))
-// 	if accumulated > amount {
-// 		outputs = append(outputs, *transaction.NewTxOutput(accumulated-amount, from)) //Refund
-// 	}
-//
-// 	tx := transaction.Transaction{nil, inputs, outputs}
-// 	tx.SetID()
-//
-// 	return &tx
-// }
+func NewUTXOTransaction(from, to string, amount int, bc *Blockchain) *transaction.Transaction {
+	var inputs []transaction.TXInput
+	var outputs []transaction.TXOutput
+
+	wallets, err := wallet.NewWallets()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	fromWallet := wallets.GetWallet(from)
+	pubKeyHash := wallet.HashPubKey(fromWallet.PublicKey)
+	accumulated, validOutputs := bc.FindSpendableTransactions(pubKeyHash, amount)
+
+	if accumulated < amount {
+		log.Panic("ERROR: Not enough funds")
+	}
+
+	//Build a list of inputs
+	for txid, outs := range validOutputs {
+		txID, _ := hex.DecodeString(txid)
+
+		for _, out := range outs {
+			inputs = append(inputs, transaction.TXInput{txID, out, nil, fromWallet.PublicKey})
+		}
+	}
+
+	//Build a list of output
+	outputs = append(outputs, *transaction.NewTxOutput(amount, to))
+	if accumulated > amount {
+		outputs = append(outputs, *transaction.NewTxOutput(accumulated-amount, from)) //Refund
+	}
+
+	tx := transaction.Transaction{nil, inputs, outputs}
+	tx.SetID()
+	// bc.SignTransaction(&tx, fromWallet.PrivateKey)
+
+	return &tx
+}

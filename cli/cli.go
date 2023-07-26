@@ -9,7 +9,9 @@ import (
 	"strconv"
 
 	"blockchain_from_scratch/blockchain"
+	"blockchain_from_scratch/blockchain/transaction"
 	"blockchain_from_scratch/utils"
+	"blockchain_from_scratch/wallet"
 )
 
 // CLI struct
@@ -19,11 +21,18 @@ func (cli *CLI) createBlockchain(benefician string) {
 	bc := blockchain.NewBlockchain(benefician)
 	bc.DB().Close()
 	fmt.Println("Done!")
+}
 
+func (cli *CLI) createWallet() {
+	wallets, _ := wallet.NewWallets()
+	address := wallets.CreateWallet()
+
+	fmt.Printf("Your new address: %s\n", address)
 }
 
 func (cli *CLI) printUsage() {
 	fmt.Println("Usage:")
+	fmt.Println(" createwallet - create new wallet")
 	fmt.Println(" newblockchain -address ADDRESS - new blockchain with benefician's address")
 	fmt.Println(" sendcoins -from ADDRESS -to ADDRESS -amount AMOUNT - send coin function")
 	fmt.Println(" getbalance -address ADDRESS - sum of UTXOs of the given address")
@@ -41,6 +50,8 @@ func (cli *CLI) validateArgs() {
 func (cli *CLI) Run() {
 	cli.validateArgs()
 
+	createWalletCmd := flag.NewFlagSet("createwallet", flag.ExitOnError)
+
 	newBlockchainCmd := flag.NewFlagSet("newblockchain", flag.ExitOnError)
 	getBalanceCmd := flag.NewFlagSet("getbalance", flag.ExitOnError)
 	sendCoinsCmd := flag.NewFlagSet("sendcoins", flag.ExitOnError)
@@ -54,6 +65,12 @@ func (cli *CLI) Run() {
 	amountData := sendCoinsCmd.Int("amount", 0, "Amount")
 
 	switch os.Args[1] {
+	case "createwallet":
+		err := createWalletCmd.Parse(os.Args[2:])
+		if err != nil {
+			log.Panic(err)
+		}
+		cli.createWallet()
 	case "newblockchain":
 		err := newBlockchainCmd.Parse(os.Args[2:])
 		if err != nil {
@@ -101,12 +118,12 @@ func (cli *CLI) Run() {
 
 // sendCoins ...
 func (cli *CLI) sendCoins(from, to string, amount int) {
-	// bc := blockchain.BCInstance()
-	// defer bc.DB().Close()
-	//
-	// //Build Input for this transaction
-	// tx := blockchain.NewUTXOTransaction(from, to, amount, bc)
-	// bc.MineBlock([]*transaction.Transaction{tx})
+	bc := blockchain.BCInstance()
+	defer bc.DB().Close()
+
+	//Build Input for this transaction
+	tx := blockchain.NewUTXOTransaction(from, to, amount, bc)
+	bc.MineBlock([]*transaction.Transaction{tx})
 	fmt.Println("Success!")
 }
 
