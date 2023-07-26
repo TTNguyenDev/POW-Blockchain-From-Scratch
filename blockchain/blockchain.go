@@ -116,30 +116,6 @@ func NewBlockchain(benefician string) *Blockchain {
 	return &bc
 }
 
-// FindSpendableTransactions -
-func (bc *Blockchain) FindSpendableTransactions(pubHash []byte, amount int) (int, map[string][]int) {
-	txs := make(map[string][]int)
-	utxos := bc.FindUnspentTransactions(pubHash)
-	accumulated := 0
-
-Work:
-	for _, tx := range utxos {
-		txID := hex.EncodeToString(tx.ID)
-
-		for id, out := range tx.Vout {
-			if out.IsLockedWithKey(pubHash) && accumulated < amount {
-				accumulated += out.Value
-				txs[txID] = append(txs[txID], id)
-
-				if accumulated >= amount {
-					break Work
-				}
-			}
-		}
-	}
-	return accumulated, txs
-}
-
 // FindUnspentTransactions ..
 func (bc *Blockchain) FindUnspentTransactions(pubHash []byte) []transaction.Transaction {
 	var unspentTxs []transaction.Transaction
@@ -183,19 +159,43 @@ func (bc *Blockchain) FindUnspentTransactions(pubHash []byte) []transaction.Tran
 	return unspentTxs
 }
 
-// FindUTXO ..
-func (bc *Blockchain) FindUTXO(pubHash []byte) []transaction.TXOutput {
-	var UTXOs []transaction.TXOutput
-	unspentTxs := bc.FindUnspentTransactions(pubHash)
+// FindUTXO finds all unspent tx outputs and returns Transactions with spent outputs removed
+func (bc *Blockchain) FindUTXO() map[string][]transaction.TXOutput {
+	UTXO := make(map[string][]transaction.TXOutput)
+	spentTXOs := make(map[string][]int)
+	bci := bc.Iterator()
 
-	for _, tx := range unspentTxs {
-		for _, out := range tx.Vout {
-			if out.IsLockedWithKey(pubHash) {
-				UTXOs = append(UTXOs, out)
+	for {
+		block := bci.Next()
+
+		for _, tx := range block.Transactions {
+			txID := hex.EncodeToString(tx.ID)
+
+		Outputs:
+			for outIdx, out := range tx.Vout {
+				if spentTXOs[txID] != nil {
+					for _, spentOutIdx := range spentTXOs[txID] {
+						if spentOutIdx == outIdx {
+							continue Outputs
+						}
+					}
+				}
+				outs := UTXO[txID]
+				outs = append(outs, out)
+			}
+
+			if !tx.IsCoinBase() {
+				for _, in := range tx.Vin {
+					txID := hex.EncodeToString(in.Txid)
+					spentTXOs[txID] = append(spentTXOs[txID], in.Vout)
+				}
 			}
 		}
+		if len(block.PrevBlockHash) == 0 {
+			break
+		}
 	}
-	return UTXOs
+	return UTXO
 }
 
 // MineBlock fn
@@ -248,7 +248,7 @@ func (bc *Blockchain) FindTransaction(ID []byte) (transaction.Transaction, error
 	for {
 		block := bci.Next()
 		for _, tx := range block.Transactions {
-			if bytes.Compare(tx.ID, ID) == 0 /*equally*/ {
+			if bytes.Equal(tx.ID, ID) /*equally*/ {
 				return *tx, nil
 			}
 		}
@@ -287,7 +287,7 @@ func (bc *Blockchain) VerifyTransaction(tx *transaction.Transaction) bool {
 }
 
 // NewUTXOTransaction -
-func NewUTXOTransaction(from, to string, amount int, bc *Blockchain) *transaction.Transaction {
+func NewUTXOTransaction(from, to string, amount int, u *UTXOSet) *transaction.Transaction {
 	var inputs []transaction.TXInput
 	var outputs []transaction.TXOutput
 
@@ -298,7 +298,7 @@ func NewUTXOTransaction(from, to string, amount int, bc *Blockchain) *transactio
 
 	fromWallet := wallets.GetWallet(from)
 	pubKeyHash := wallet.HashPubKey(fromWallet.PublicKey)
-	accumulated, validOutputs := bc.FindSpendableTransactions(pubKeyHash, amount)
+	accumulated, validOutputs := u.FindSpendableTransactions(pubKeyHash, amount)
 
 	if accumulated < amount {
 		log.Panic("ERROR: Not enough funds")
@@ -309,7 +309,7 @@ func NewUTXOTransaction(from, to string, amount int, bc *Blockchain) *transactio
 		txID, _ := hex.DecodeString(txid)
 
 		for _, out := range outs {
-			inputs = append(inputs, transaction.TXInput{txID, out, nil, fromWallet.PublicKey})
+			inputs = append(inputs, transaction.TXInput{Txid: txID, Vout: out, Signature: nil, Pubkey: fromWallet.PublicKey})
 		}
 	}
 
@@ -319,9 +319,17 @@ func NewUTXOTransaction(from, to string, amount int, bc *Blockchain) *transactio
 		outputs = append(outputs, *transaction.NewTxOutput(accumulated-amount, from)) //Refund
 	}
 
-	tx := transaction.Transaction{nil, inputs, outputs}
+	tx := transaction.Transaction{ID: nil, Vin: inputs, Vout: outputs}
 	tx.SetID()
-	// bc.SignTransaction(&tx, fromWallet.PrivateKey)
+	u.Bc.SignTransaction(&tx, fromWallet.PrivateKey)
 
 	return &tx
 }
+
+//UTXOSet
+// Define new bucket : utxoBucket
+// Reindex: Remove the old bucket if any
+// Get all UTXO
+// save data to utxo set
+
+// FindUTXO tx:
