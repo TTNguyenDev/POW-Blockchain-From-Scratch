@@ -325,11 +325,3 @@ func NewUTXOTransaction(from, to string, amount int, u *UTXOSet) *transaction.Tr
 
 	return &tx
 }
-
-//UTXOSet
-// Define new bucket : utxoBucket
-// Reindex: Remove the old bucket if any
-// Get all UTXO
-// save data to utxo set
-
-// FindUTXO tx:
