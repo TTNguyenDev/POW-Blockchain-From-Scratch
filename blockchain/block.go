@@ -17,11 +17,12 @@ type Block struct {
 	PrevBlockHash []byte
 	Hash          []byte
 	Nonce         int
+	Height        int
 }
 
 // NewBlock creates a new block with given txs
-func NewBlock(txs []*transaction.Transaction, prevBlockHash []byte) *Block {
-	block := &Block{txs, time.Now().Unix(), prevBlockHash, []byte{}, 0}
+func NewBlock(txs []*transaction.Transaction, prevBlockHash []byte, height int) *Block {
+	block := &Block{txs, time.Now().Unix(), prevBlockHash, []byte{}, 0, height}
 	pow := NewProofOfWork(block)
 	nonce, hash := pow.Run()
 	block.Hash = hash
@@ -31,7 +32,7 @@ func NewBlock(txs []*transaction.Transaction, prevBlockHash []byte) *Block {
 
 // NewGenesisBlock creates genesis data for the blockchain
 func NewGenesisBlock(coinbase *transaction.Transaction) *Block {
-	return NewBlock([]*transaction.Transaction{coinbase}, []byte{})
+	return NewBlock([]*transaction.Transaction{coinbase}, []byte{}, 0)
 }
 
 // Serialize data

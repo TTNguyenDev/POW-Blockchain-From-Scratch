@@ -95,6 +95,20 @@ func (tx Transaction) Serialize() []byte {
 	return encoded.Bytes()
 }
 
+// Deserialize returns Transaction object
+func Deserialize(d []byte) Transaction {
+	var tx Transaction
+
+	decoder := gob.NewDecoder(bytes.NewReader(d))
+	err := decoder.Decode(&tx)
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	return tx
+}
+
 func (tx *Transaction) TrimmedCopy() Transaction {
 	var inputs []TXInput
 	var outputs []TXOutput
