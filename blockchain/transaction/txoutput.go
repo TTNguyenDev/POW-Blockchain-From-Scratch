@@ -14,46 +14,26 @@ type TXOutput struct {
 	PubKeyHash []byte
 }
 
+// Lock method sets the pubHash, which is decoded from the input address, to the out.PubKeyHash.
 func (out *TXOutput) Lock(address []byte) {
 	pubHash := utils.Base58Decode(address)
 	pubHash = pubHash[1 : len(pubHash)-4] // remove version & checksum
 	out.PubKeyHash = pubHash
 }
 
+// IsLockedWithKey ..
 func (out *TXOutput) IsLockedWithKey(pubHash []byte) bool {
 	return bytes.Equal(out.PubKeyHash, pubHash)
 }
 
+// NewTxOutput ..
 func NewTxOutput(value int, address string) *TXOutput {
 	txo := &TXOutput{value, nil}
 	txo.Lock([]byte(address))
 	return txo
 }
 
-func (out TXOutput) Serialize() []byte {
-	var result bytes.Buffer
-	encoder := gob.NewEncoder(&result)
-
-	err := encoder.Encode(out)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	return result.Bytes()
-}
-
-func SerializeTXOutputs(outputs []TXOutput) []byte {
-	var result bytes.Buffer
-	encoder := gob.NewEncoder(&result)
-
-	err := encoder.Encode(outputs)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	return result.Bytes()
-}
-
+// DeSerializeTXOuputs ..
 func DeSerializeTXOuputs(outputs []byte) []TXOutput {
 
 	var result []TXOutput

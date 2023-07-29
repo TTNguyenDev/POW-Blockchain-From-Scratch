@@ -6,6 +6,7 @@ import (
 	"log"
 )
 
+// GobEncode ..
 func GobEncode(data interface{}) []byte {
 	var buff bytes.Buffer
 

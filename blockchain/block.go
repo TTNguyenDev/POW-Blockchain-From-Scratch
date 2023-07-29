@@ -1,3 +1,4 @@
+//Package blockchain contains all logic of blocks, blockchain iterator, consensus, etc
 package blockchain
 
 import (
@@ -6,7 +7,9 @@ import (
 	"log"
 	"time"
 
+	merkletree "blockchain_from_scratch/blockchain/merkle_tree"
 	"blockchain_from_scratch/blockchain/transaction"
+	"blockchain_from_scratch/utils"
 )
 
 // Block - A definition for this simple implementation
@@ -35,21 +38,8 @@ func NewGenesisBlock(coinbase *transaction.Transaction) *Block {
 	return NewBlock([]*transaction.Transaction{coinbase}, []byte{}, 0)
 }
 
-// Serialize data
-func (b *Block) Serialize() []byte {
-	var result bytes.Buffer
-	encoder := gob.NewEncoder(&result)
-
-	err := encoder.Encode(b)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	return result.Bytes()
-}
-
-// Deserialize data
-func Deserialize(d []byte) *Block {
+// DeserializeBlock data
+func DeserializeBlock(d []byte) *Block {
 	var block Block
 
 	decoder := gob.NewDecoder(bytes.NewReader(d))
@@ -67,9 +57,9 @@ func (b *Block) HashTransactions() []byte {
 	var txs [][]byte
 
 	for _, tx := range b.Transactions {
-		txs = append(txs, tx.Serialize())
+		txs = append(txs, utils.GobEncode(tx))
 	}
 
-	mTree := transaction.NewMerkleTree(txs)
+	mTree := merkletree.NewMerkleTree(txs)
 	return mTree.RootNode.Data
 }

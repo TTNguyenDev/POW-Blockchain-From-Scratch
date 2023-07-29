@@ -10,8 +10,9 @@ import (
 	"os"
 )
 
-const walletFile = "wallet.dat"
+const walletFile = "db/wallet.dat"
 
+// Wallets struct definition
 type Wallets struct {
 	Wallets map[string]*Wallet
 }
@@ -35,8 +36,18 @@ func (ws *Wallets) CreateWallet() string {
 	return address
 }
 
+// GetWallet ..
 func (ws Wallets) GetWallet(address string) Wallet {
 	return *ws.Wallets[address]
+}
+
+// GetAddresses
+func (ws *Wallets) GetAddresses() []string {
+	var addresses []string
+	for address := range ws.Wallets {
+		addresses = append(addresses, address)
+	}
+	return addresses
 }
 
 // LoadFromFile loads wallets from the given file into to global struct

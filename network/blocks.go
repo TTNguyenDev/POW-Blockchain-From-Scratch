@@ -11,12 +11,6 @@ import (
 	"blockchain_from_scratch/utils"
 )
 
-type inv struct {
-	AddrFrom string
-	Type     string
-	Items    [][]byte
-}
-
 type getblocks struct {
 	AddrFrom string
 }
@@ -72,4 +66,10 @@ func sendGetBlocks(address string) {
 	req := append(commandToBytes("getblocks"), payload...)
 
 	sendData(address, req)
+}
+
+func requestBlocks() {
+	for _, node := range knownNodes {
+		sendGetBlocks(node)
+	}
 }

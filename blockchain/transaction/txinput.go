@@ -14,6 +14,8 @@ type TXInput struct {
 	Pubkey    []byte
 }
 
+// UsesKey returns a boolean value.
+// returns true if txInput.Pubkey == pubHash
 func (in *TXInput) UsesKey(pubHash []byte) bool {
 	lockingHash := utils.HashPubKey(in.Pubkey)
 	return bytes.Equal(lockingHash, pubHash)

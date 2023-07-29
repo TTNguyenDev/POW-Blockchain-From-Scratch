@@ -2,61 +2,48 @@ package blockchain
 
 import (
 	"encoding/hex"
-	"log"
 
 	"github.com/boltdb/bolt"
 
 	"blockchain_from_scratch/blockchain/transaction"
+	"blockchain_from_scratch/utils"
 )
 
 const utxoSetBucket = "chainstate"
 
+// UTXOSet represent the UTXOSet model of Bitcoin
 type UTXOSet struct {
 	Bc *Blockchain
 }
 
+// Reindex checks all blocks in the blockchain staring from genesis block and finds all UTXO transactions
 func (u UTXOSet) Reindex() {
 	db := u.Bc.db
 	bucket := []byte(utxoSetBucket)
 
 	err := db.Update(func(tx *bolt.Tx) error {
 		err := tx.DeleteBucket(bucket)
-		if err != nil {
-			log.Panic(err)
-		}
+		utils.CheckError(err)
 		_, err = tx.CreateBucket(bucket)
-		if err != nil {
-			return err
-		}
+		utils.CheckError(err)
 		return nil
 	})
-
-	if err != nil {
-		log.Panic(err)
-	}
+	utils.CheckError(err)
 
 	allUTXOs := u.Bc.FindUTXO()
 
 	err = db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
 
-		for txId, outputs := range allUTXOs {
-			key, err := hex.DecodeString(txId)
-			if err != nil {
-				log.Panic(err)
-			}
-			err = b.Put(key, transaction.SerializeTXOutputs(outputs))
-
-			if err != nil {
-				log.Panic(err)
-			}
+		for txID, outputs := range allUTXOs {
+			key, err := hex.DecodeString(txID)
+			utils.CheckError(err)
+			err = b.Put(key, utils.GobEncode(outputs))
+			utils.CheckError(err)
 		}
 		return nil
 	})
-
-	if err != nil {
-		log.Panic(err)
-	}
+	utils.CheckError(err)
 }
 
 // FindSpendableTransactions -
@@ -83,14 +70,11 @@ func (u UTXOSet) FindSpendableTransactions(pubHash []byte, amount int) (int, map
 		}
 		return nil
 	})
-
-	if err != nil {
-		log.Panic(err)
-	}
+	utils.CheckError(err)
 	return accumulated, txs
 }
 
-// FindUTXO
+// FindUTXO ..
 func (u UTXOSet) FindUTXO(pubHash []byte) []transaction.TXOutput {
 	var result []transaction.TXOutput
 	db := u.Bc.db
@@ -111,9 +95,7 @@ func (u UTXOSet) FindUTXO(pubHash []byte) []transaction.TXOutput {
 		return nil
 	})
 
-	if err != nil {
-		log.Panic(err)
-	}
+	utils.CheckError(err)
 	return result
 }
 
@@ -131,39 +113,27 @@ func (u UTXOSet) Update(block *Block) {
 					outBytes := b.Get(vin.Txid)
 					outs := transaction.DeSerializeTXOuputs(outBytes)
 
-					for outId, out := range outs {
-						if outId != vin.Vout {
+					for outID, out := range outs {
+						if outID != vin.Vout {
 							updateOuts = append(updateOuts, out)
 						}
 					}
 					if len(updateOuts) == 0 {
 						err := b.Delete(vin.Txid)
-
-						if err != nil {
-							log.Panic(err)
-						}
+						utils.CheckError(err)
 					} else {
-						err := b.Put(vin.Txid, transaction.SerializeTXOutputs(updateOuts))
-
-						if err != nil {
-							log.Panic(err)
-						}
+						err := b.Put(vin.Txid, utils.GobEncode(updateOuts))
+						utils.CheckError(err)
 					}
 				}
 			}
 
 			var newOutputs []transaction.TXOutput
 			newOutputs = append(newOutputs, tx.Vout...)
-			err := b.Put(tx.ID, transaction.SerializeTXOutputs(newOutputs))
-
-			if err != nil {
-				log.Panic(err)
-			}
+			err := b.Put(tx.ID, utils.GobEncode(newOutputs))
+			utils.CheckError(err)
 		}
 		return nil
 	})
-
-	if err != nil {
-		log.Panic(err)
-	}
+	utils.CheckError(err)
 }

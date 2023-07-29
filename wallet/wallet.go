@@ -53,6 +53,7 @@ func ValidateAddress(address string) bool {
 	return bytes.Equal(actualChecksum, targetChecksum)
 }
 
+// HashPubKey ..
 func HashPubKey(pubKey []byte) []byte {
 	publicSHA256 := sha256.Sum256(pubKey)
 

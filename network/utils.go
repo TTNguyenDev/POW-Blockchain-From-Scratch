@@ -48,6 +48,7 @@ func sendData(addr string, data []byte) {
 	}
 }
 
+// nodeIsKnown ..
 func nodeIsKnown(addr string) bool {
 	for _, node := range knownNodes {
 		if node == addr {

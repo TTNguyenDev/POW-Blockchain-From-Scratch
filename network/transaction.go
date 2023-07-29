@@ -27,7 +27,7 @@ func handleTx(request []byte, bc *blockchain.Blockchain) {
 	log.Panic(err)
 
 	txData := payload.Transaction
-	tx := transaction.Deserialize(txData)
+	tx := transaction.DeserializeTx(txData)
 	//TODO Need to verify transaction before adding it to the mempool
 	mempool[hex.EncodeToString(tx.ID)] = tx
 
@@ -82,7 +82,7 @@ func handleTx(request []byte, bc *blockchain.Blockchain) {
 }
 
 func sendTx(addr string, transaction *transaction.Transaction) {
-	data := tx{nodeAddress, transaction.Serialize()}
+	data := tx{nodeAddress, utils.GobEncode(transaction)}
 	payload := utils.GobEncode(data)
 	req := append(commandToBytes("tx"), payload...)
 

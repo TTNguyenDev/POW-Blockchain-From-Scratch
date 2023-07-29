@@ -1,3 +1,4 @@
+//Package transaction contains all transaction logics
 package transaction
 
 import (
@@ -11,6 +12,8 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+
+	"blockchain_from_scratch/utils"
 )
 
 const subsidy = 10000
@@ -38,12 +41,13 @@ func (tx *Transaction) SetID() {
 	tx.ID = hash[:]
 }
 
+// Hash returns a byte array by hashing the serialized transaction
 func (tx *Transaction) Hash() []byte {
 	var hash [32]byte
 
 	txCopy := *tx
 	txCopy.ID = []byte{}
-	hash = sha256.Sum256(txCopy.Serialize())
+	hash = sha256.Sum256(utils.GobEncode(txCopy))
 	return hash[:]
 }
 
@@ -67,36 +71,13 @@ func NewCoinbaseTX(to, data string) *Transaction {
 	return &tx
 }
 
-// CanUnlockOutputWith - Ignore it for now. We will update it later
-// func (in *TXInput) CanUnlockOutputWith(unlockingData string) bool {
-// 	return in.ScriptSig == unlockingData
-// }
-//
-// // CanBeUnlockedWith - Ignore it for now. We will update it later
-// func (out *TXOutput) CanBeUnlockedWith(unlockingData string) bool {
-// 	return out.ScriptPubKey == unlockingData
-// }
-
 // IsCoinBase - Check whether the given transaction is a Coinbase transaction or not
 func (tx Transaction) IsCoinBase() bool {
 	return len(tx.Vin) == 1 && len(tx.Vin[0].Txid) == 0 && tx.Vin[0].Vout == -1
 }
 
-// Serialize returns a serialized Transaction
-func (tx Transaction) Serialize() []byte {
-	var encoded bytes.Buffer
-
-	enc := gob.NewEncoder(&encoded)
-	err := enc.Encode(tx)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	return encoded.Bytes()
-}
-
-// Deserialize returns Transaction object
-func Deserialize(d []byte) Transaction {
+// DeserializeTx returns Transaction object
+func DeserializeTx(d []byte) Transaction {
 	var tx Transaction
 
 	decoder := gob.NewDecoder(bytes.NewReader(d))
@@ -109,6 +90,7 @@ func Deserialize(d []byte) Transaction {
 	return tx
 }
 
+// TrimmedCopy returns a transaction without signature and pubkey
 func (tx *Transaction) TrimmedCopy() Transaction {
 	var inputs []TXInput
 	var outputs []TXOutput
@@ -125,6 +107,7 @@ func (tx *Transaction) TrimmedCopy() Transaction {
 	return txCopy
 }
 
+// Sign adds signature to each Vin
 func (tx *Transaction) Sign(privKey ecdsa.PrivateKey, prevTxs map[string]Transaction) {
 	if tx.IsCoinBase() {
 		return
@@ -148,6 +131,7 @@ func (tx *Transaction) Sign(privKey ecdsa.PrivateKey, prevTxs map[string]Transac
 	}
 }
 
+// Verify checks the signature of each Vin and returns fasle for any invalid transaction.
 func (tx *Transaction) Verify(prevTXs map[string]Transaction) bool {
 	txCopy := tx.TrimmedCopy()
 	curve := elliptic.P256()

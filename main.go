@@ -1,8 +1,7 @@
+// Package main is the entrypoint of this program
 package main
 
 import (
-	"github.com/libp2p/go-libp2p"
-
 	"blockchain_from_scratch/cli"
 )
 

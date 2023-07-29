@@ -1,19 +1,23 @@
-package transaction
+// Package merkletree includes the merkletree implementation for verifying transactions
+package merkletree
 
 import (
 	"crypto/sha256"
 )
 
+// MerkleTree struct only contains rootnode
 type MerkleTree struct {
 	RootNode *MerkleNode
 }
 
+// MerkleNode struct definition
 type MerkleNode struct {
 	Left  *MerkleNode
 	Right *MerkleNode
 	Data  []byte
 }
 
+// NewMerkleNode retreives merkle nodes and its data, then returns a father merkle node
 func NewMerkleNode(left, right *MerkleNode, data []byte) *MerkleNode {
 	mNode := MerkleNode{}
 
@@ -32,6 +36,7 @@ func NewMerkleNode(left, right *MerkleNode, data []byte) *MerkleNode {
 	return &mNode
 }
 
+// NewMerkleTree returns a merkle tree with the given data
 func NewMerkleTree(data [][]byte) *MerkleTree {
 	var nodes []MerkleNode
 
@@ -55,3 +60,6 @@ func NewMerkleTree(data [][]byte) *MerkleTree {
 	mTree := MerkleTree{&nodes[0]}
 	return &mTree
 }
+
+//TODO: Verify MerkleTree
+//TODO: Find MerklePath
