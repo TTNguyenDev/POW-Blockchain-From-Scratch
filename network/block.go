@@ -17,6 +17,8 @@ type block struct {
 
 //TODO: Thay vì tin tưởng block gửi tới vô điều kiện, chúng ta phải xác minh block mới nhận được có đúng hay không trước khi cho vào blockchain.
 //TODO: Thay vì chạy UTXOSet.Reindex(), hãy chạy UTXOSet.Update(block) đối với mỗi block nhận được để giảm thiểu việc quét qua cả blockchain lãng phí.
+
+// handleBlock ..
 func handleBlock(request []byte, bc *blockchain.Blockchain) {
 	var buff bytes.Buffer
 	var payload block
@@ -43,6 +45,7 @@ func handleBlock(request []byte, bc *blockchain.Blockchain) {
 	}
 }
 
+// sendBlock ..
 func sendBlock(addr string, b *blockchain.Block) {
 	data := block{addr, utils.GobEncode(b)}
 	payload := utils.GobEncode(data)

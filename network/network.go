@@ -1,3 +1,4 @@
+// Package network ...
 package network
 
 import (
@@ -8,6 +9,7 @@ import (
 
 	"blockchain_from_scratch/blockchain"
 	"blockchain_from_scratch/blockchain/transaction"
+	"blockchain_from_scratch/utils"
 )
 
 const nodeVersion = 1
@@ -21,6 +23,7 @@ var knownNodes = []string{"localhost:3000"}
 var blocksInTransit = [][]byte{}
 var mempool = make(map[string]transaction.Transaction)
 
+// StartServer ..
 func StartServer(nodeID, minerAddress string) {
 	nodeAddress = fmt.Sprintf("localhost:%s", nodeID)
 	miningAddress := minerAddress
@@ -47,13 +50,25 @@ func StartServer(nodeID, minerAddress string) {
 
 func handleConnection(conn net.Conn, bc *blockchain.Blockchain) {
 	request, err := ioutil.ReadAll(conn)
-	log.Panic(err)
+	utils.CheckError(err)
 	command := bytesToCommand(request[:commandLength])
 	fmt.Printf("Received %s command\n", command)
 
 	switch command {
+	case "addr":
+		handleAddr(request)
+	case "block":
+		handleBlock(request, bc)
+	case "inv":
+		handleInv(request, bc)
+	case "getblocks":
+		handleGetBlocks(request, bc)
+	case "getdata":
+		handleGetData(request, bc)
+	case "tx":
+		handleTx(request, bc)
 	case "version":
-
+		handleVersion(request, bc)
 	default:
 		fmt.Println("Unknown command!")
 	}

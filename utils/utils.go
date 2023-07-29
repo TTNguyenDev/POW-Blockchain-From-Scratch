@@ -39,3 +39,10 @@ func HashPubKey(pub []byte) []byte {
 
 	return publicRIPEMD160
 }
+
+// CheckError
+func CheckError(err error) {
+	if err != nil {
+		log.Panic(err)
+	}
+}

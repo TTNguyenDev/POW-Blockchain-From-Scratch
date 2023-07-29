@@ -67,3 +67,9 @@ func sendGetBlocks(address string) {
 
 	sendData(address, req)
 }
+
+func requestBlocks() {
+	for _, node := range knownNodes {
+		sendGetBlocks(node)
+	}
+}

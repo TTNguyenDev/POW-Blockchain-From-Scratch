@@ -41,10 +41,7 @@ func BCInstance() *Blockchain {
 
 	var tip []byte
 	db, err := bolt.Open(dbFile, 0600, nil)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	utils.CheckError(err)
 
 	err = db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBuket))
@@ -56,15 +53,13 @@ func BCInstance() *Blockchain {
 
 		return nil
 	})
-
-	if err != nil {
-		log.Panic(err)
-	}
+	utils.CheckError(err)
 
 	bc := Blockchain{tip, db}
 	return &bc
 }
 
+// DB returns the db attribute of Blockchain class
 func (bc *Blockchain) DB() *bolt.DB {
 	return bc.db
 }
@@ -77,10 +72,7 @@ func NewBlockchain(benefician string) *Blockchain {
 	}
 	var tip []byte
 	db, err := bolt.Open(dbFile, 0600, nil)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	utils.CheckError(err)
 
 	err = db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBuket))
@@ -91,27 +83,18 @@ func NewBlockchain(benefician string) *Blockchain {
 			coinbaseTx := transaction.NewCoinbaseTX(benefician, "")
 			genesis := NewGenesisBlock(coinbaseTx)
 			b, err := tx.CreateBucket([]byte(blocksBuket))
-			if err != nil {
-				log.Panic(err)
-			}
+			utils.CheckError(err)
 			err = b.Put(genesis.Hash, utils.GobEncode(genesis))
 
-			if err != nil {
-				log.Panic(err)
-			}
+			utils.CheckError(err)
 			err = b.Put([]byte("l"), genesis.Hash)
 
-			if err != nil {
-				log.Panic(err)
-			}
+			utils.CheckError(err)
 			tip = genesis.Hash
 		}
 		return nil
 	})
-
-	if err != nil {
-		log.Panic(err)
-	}
+	utils.CheckError(err)
 
 	bc := Blockchain{tip, db}
 	return &bc
@@ -214,10 +197,7 @@ func (bc *Blockchain) MineBlock(txs []*transaction.Transaction) *Block {
 
 		return nil
 	})
-
-	if err != nil {
-		log.Panic(err)
-	}
+	utils.CheckError(err)
 
 	for _, tx := range txs {
 		if !bc.VerifyTransaction(tx) {
@@ -229,23 +209,16 @@ func (bc *Blockchain) MineBlock(txs []*transaction.Transaction) *Block {
 	err = bc.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBuket))
 		err := b.Put(newBlock.Hash, utils.GobEncode(newBlock))
-
-		if err != nil {
-			log.Panic(err)
-		}
+		utils.CheckError(err)
 
 		err = b.Put([]byte("l"), newBlock.Hash)
 
-		if err != nil {
-			log.Panic(err)
-		}
+		utils.CheckError(err)
 		bc.tip = newBlock.Hash
 
 		return nil
 	})
-	if err != nil {
-		log.Panic(err)
-	}
+	utils.CheckError(err)
 	return newBlock
 }
 
@@ -274,9 +247,7 @@ func (bc *Blockchain) SignTransaction(tx *transaction.Transaction, privKey ecdsa
 
 	for _, vin := range tx.Vin {
 		prevTX, err := bc.FindTransaction(vin.Txid)
-		if err != nil {
-			log.Panic(err)
-		}
+		utils.CheckError(err)
 		prevTXs[hex.EncodeToString(prevTX.ID)] = prevTX
 	}
 	tx.Sign(privKey, prevTXs)
@@ -288,9 +259,7 @@ func (bc *Blockchain) VerifyTransaction(tx *transaction.Transaction) bool {
 
 	for _, vin := range tx.Vin {
 		prevTX, err := bc.FindTransaction(vin.Txid)
-		if err != nil {
-			log.Panic(err)
-		}
+		utils.CheckError(err)
 		prevTXs[hex.EncodeToString(prevTX.ID)] = prevTX
 	}
 	return tx.Verify(prevTXs)
@@ -302,9 +271,7 @@ func NewUTXOTransaction(from, to string, amount int, u *UTXOSet) *transaction.Tr
 	var outputs []transaction.TXOutput
 
 	wallets, err := wallet.NewWallets()
-	if err != nil {
-		log.Panic(err)
-	}
+	utils.CheckError(err)
 
 	fromWallet := wallets.GetWallet(from)
 	pubKeyHash := wallet.HashPubKey(fromWallet.PublicKey)
@@ -348,7 +315,7 @@ func (bc *Blockchain) AddBlock(block *Block) {
 
 		blockData := utils.GobEncode(block)
 		err := b.Put(block.Hash, blockData)
-		log.Panic(err)
+		utils.CheckError(err)
 
 		lastHash := b.Get([]byte("l"))
 		lastBlockData := b.Get(lastHash)
@@ -356,12 +323,12 @@ func (bc *Blockchain) AddBlock(block *Block) {
 
 		if block.Height > lastBlock.Height {
 			err = b.Put([]byte("l"), block.Hash)
-			log.Panic(err)
+			utils.CheckError(err)
 			bc.tip = block.Hash
 		}
 		return nil
 	})
-	log.Panic(err)
+	utils.CheckError(err)
 }
 
 // View methods
