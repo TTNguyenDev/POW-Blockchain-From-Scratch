@@ -25,11 +25,6 @@ type Blockchain struct {
 	db  *bolt.DB
 }
 
-// Iterator - Constructor
-func (bc *blockchain.Blockchain) Iterator() *Iterator {
-	bci := &Iterator{bc.tip, bc.db}
-	return bci
-}
 func dbExists() bool {
 	if _, err := os.Stat(dbFile); os.IsNotExist(err) {
 		return false
@@ -51,7 +46,7 @@ func BCInstance() *Blockchain {
 		log.Panic(err)
 	}
 
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBuket))
 		tip = b.Get([]byte("l"))
 

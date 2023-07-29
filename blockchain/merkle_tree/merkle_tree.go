@@ -1,3 +1,4 @@
+// Package merkletree includes the merkletree implementation for verifying transactions
 package merkletree
 
 import (

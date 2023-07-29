@@ -1,3 +1,4 @@
+// Package cli serves user actions from the command line
 package cli
 
 import (
@@ -6,7 +7,6 @@ import (
 	"strconv"
 
 	"blockchain_from_scratch/blockchain"
-	"blockchain_from_scratch/blockchain/consensus"
 )
 
 // createBlockchain ..
@@ -36,7 +36,7 @@ func (cli *CLI) printChain() {
 			fmt.Printf("Transaction: %s\n", hex.EncodeToString(tx.ID))
 		}
 		fmt.Printf("Block Hash: %x\n", b.Hash)
-		pow := consensus.NewProofOfWork(b)
+		pow := blockchain.NewProofOfWork(b)
 		fmt.Printf("IsValid: %s \n\n", strconv.FormatBool(pow.Validate()))
 	}
 }

@@ -6,20 +6,20 @@ import (
 	"github.com/boltdb/bolt"
 )
 
-// BlockchainIterator - Iterator implemetation to the blockchain
-type BlockchainIterator struct {
+// Iterator - Iterator implemetation to the blockchain
+type Iterator struct {
 	currentHash []byte
 	db          *bolt.DB
 }
 
 // Iterator - Constructor
-func (bc *Blockchain) Iterator() *BlockchainIterator {
-	bci := &BlockchainIterator{bc.tip, bc.db}
+func (bc *Blockchain) Iterator() *Iterator {
+	bci := &Iterator{bc.tip, bc.db}
 	return bci
 }
 
 // Next function return the next block
-func (i *BlockchainIterator) Next() *Block {
+func (i *Iterator) Next() *Block {
 	if len(i.currentHash) == 0 {
 		return nil
 	}
