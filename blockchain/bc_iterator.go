@@ -28,7 +28,7 @@ func (i *BlockchainIterator) Next() *Block {
 	err := i.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBuket))
 		encodedBlock := b.Get(i.currentHash)
-		block = Deserialize(encodedBlock)
+		block = DeserializeBlock(encodedBlock)
 
 		return nil
 	})

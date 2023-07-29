@@ -11,12 +11,6 @@ import (
 	"blockchain_from_scratch/utils"
 )
 
-type inv struct {
-	AddrFrom string
-	Type     string
-	Items    [][]byte
-}
-
 type getblocks struct {
 	AddrFrom string
 }

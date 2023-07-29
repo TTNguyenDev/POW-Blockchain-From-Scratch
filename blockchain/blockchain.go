@@ -12,6 +12,7 @@ import (
 	"github.com/boltdb/bolt"
 
 	"blockchain_from_scratch/blockchain/transaction"
+	"blockchain_from_scratch/utils"
 	"blockchain_from_scratch/wallet"
 )
 
@@ -24,6 +25,11 @@ type Blockchain struct {
 	db  *bolt.DB
 }
 
+// Iterator - Constructor
+func (bc *blockchain.Blockchain) Iterator() *Iterator {
+	bci := &Iterator{bc.tip, bc.db}
+	return bci
+}
 func dbExists() bool {
 	if _, err := os.Stat(dbFile); os.IsNotExist(err) {
 		return false
@@ -93,7 +99,7 @@ func NewBlockchain(benefician string) *Blockchain {
 			if err != nil {
 				log.Panic(err)
 			}
-			err = b.Put(genesis.Hash, genesis.Serialize())
+			err = b.Put(genesis.Hash, utils.GobEncode(genesis))
 
 			if err != nil {
 				log.Panic(err)
@@ -208,7 +214,7 @@ func (bc *Blockchain) MineBlock(txs []*transaction.Transaction) *Block {
 		lastHash = b.Get([]byte("l")) // Get lash block hash
 
 		blockData := b.Get(lastHash)
-		block := Deserialize(blockData)
+		block := DeserializeBlock(blockData)
 		lastHeight = block.Height
 
 		return nil
@@ -227,7 +233,7 @@ func (bc *Blockchain) MineBlock(txs []*transaction.Transaction) *Block {
 
 	err = bc.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBuket))
-		err := b.Put(newBlock.Hash, newBlock.Serialize())
+		err := b.Put(newBlock.Hash, utils.GobEncode(newBlock))
 
 		if err != nil {
 			log.Panic(err)
@@ -248,6 +254,7 @@ func (bc *Blockchain) MineBlock(txs []*transaction.Transaction) *Block {
 	return newBlock
 }
 
+// FindTransaction ..
 func (bc *Blockchain) FindTransaction(ID []byte) (transaction.Transaction, error) {
 	bci := bc.Iterator()
 
@@ -266,6 +273,7 @@ func (bc *Blockchain) FindTransaction(ID []byte) (transaction.Transaction, error
 	return transaction.Transaction{}, errors.New("Transaction is not found")
 }
 
+// SignTransaction ..
 func (bc *Blockchain) SignTransaction(tx *transaction.Transaction, privKey ecdsa.PrivateKey) {
 	prevTXs := make(map[string]transaction.Transaction)
 
@@ -279,6 +287,7 @@ func (bc *Blockchain) SignTransaction(tx *transaction.Transaction, privKey ecdsa
 	tx.Sign(privKey, prevTXs)
 }
 
+// VerifyTransaction ..
 func (bc *Blockchain) VerifyTransaction(tx *transaction.Transaction) bool {
 	prevTXs := make(map[string]transaction.Transaction)
 
@@ -342,13 +351,13 @@ func (bc *Blockchain) AddBlock(block *Block) {
 			return nil
 		}
 
-		blockData := block.Serialize()
+		blockData := utils.GobEncode(block)
 		err := b.Put(block.Hash, blockData)
 		log.Panic(err)
 
 		lastHash := b.Get([]byte("l"))
 		lastBlockData := b.Get(lastHash)
-		lastBlock := Deserialize(lastBlockData)
+		lastBlock := DeserializeBlock(lastBlockData)
 
 		if block.Height > lastBlock.Height {
 			err = b.Put([]byte("l"), block.Hash)
@@ -361,13 +370,16 @@ func (bc *Blockchain) AddBlock(block *Block) {
 }
 
 // View methods
-func (b Blockchain) GetBestHeight() int {
+
+// GetBestHeight ..
+func (bc Blockchain) GetBestHeight() int {
 	return 10 //TODO: We need to read bestheight from db
 }
 
-func (b *Blockchain) GetBlockHashes() [][]byte {
+// GetBlockHashes ..
+func (bc *Blockchain) GetBlockHashes() [][]byte {
 	var blocks [][]byte
-	bci := b.Iterator()
+	bci := bc.Iterator()
 
 	for {
 		block := bci.Next()
@@ -379,6 +391,7 @@ func (b *Blockchain) GetBlockHashes() [][]byte {
 	return blocks
 }
 
+// GetBlock ..
 func (bc *Blockchain) GetBlock(blockHash []byte) (Block, error) {
 	var block Block
 
@@ -389,7 +402,7 @@ func (bc *Blockchain) GetBlock(blockHash []byte) (Block, error) {
 			return errors.New("Block is not found")
 		}
 
-		block = *Deserialize(blockData)
+		block = *DeserializeBlock(blockData)
 		return nil
 	})
 	if err != nil {

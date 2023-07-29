@@ -7,6 +7,7 @@ import (
 	"github.com/boltdb/bolt"
 
 	"blockchain_from_scratch/blockchain/transaction"
+	"blockchain_from_scratch/utils"
 )
 
 const utxoSetBucket = "chainstate"
@@ -45,7 +46,7 @@ func (u UTXOSet) Reindex() {
 			if err != nil {
 				log.Panic(err)
 			}
-			err = b.Put(key, transaction.SerializeTXOutputs(outputs))
+			err = b.Put(key, utils.GobEncode(outputs))
 
 			if err != nil {
 				log.Panic(err)
@@ -131,8 +132,8 @@ func (u UTXOSet) Update(block *Block) {
 					outBytes := b.Get(vin.Txid)
 					outs := transaction.DeSerializeTXOuputs(outBytes)
 
-					for outId, out := range outs {
-						if outId != vin.Vout {
+					for outID, out := range outs {
+						if outID != vin.Vout {
 							updateOuts = append(updateOuts, out)
 						}
 					}
@@ -143,7 +144,7 @@ func (u UTXOSet) Update(block *Block) {
 							log.Panic(err)
 						}
 					} else {
-						err := b.Put(vin.Txid, transaction.SerializeTXOutputs(updateOuts))
+						err := b.Put(vin.Txid, utils.GobEncode(updateOuts))
 
 						if err != nil {
 							log.Panic(err)
@@ -154,7 +155,7 @@ func (u UTXOSet) Update(block *Block) {
 
 			var newOutputs []transaction.TXOutput
 			newOutputs = append(newOutputs, tx.Vout...)
-			err := b.Put(tx.ID, transaction.SerializeTXOutputs(newOutputs))
+			err := b.Put(tx.ID, utils.GobEncode(newOutputs))
 
 			if err != nil {
 				log.Panic(err)

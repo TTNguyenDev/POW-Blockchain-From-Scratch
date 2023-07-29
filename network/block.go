@@ -27,7 +27,7 @@ func handleBlock(request []byte, bc *blockchain.Blockchain) {
 	log.Panic(err)
 
 	blockData := payload.Block
-	block := blockchain.Deserialize(blockData)
+	block := blockchain.DeserializeBlock(blockData)
 
 	fmt.Println("Received a new block!")
 	bc.AddBlock(block)
@@ -44,7 +44,7 @@ func handleBlock(request []byte, bc *blockchain.Blockchain) {
 }
 
 func sendBlock(addr string, b *blockchain.Block) {
-	data := block{addr, b.Serialize()}
+	data := block{addr, utils.GobEncode(b)}
 	payload := utils.GobEncode(data)
 	req := append(commandToBytes("block"), payload...)
 
