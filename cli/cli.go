@@ -18,6 +18,7 @@ func (cli *CLI) printUsage() {
 	fmt.Println(" getbalance -address ADDRESS - sum of UTXOs of the given address")
 	fmt.Println(" printchain - print all the blocks of the blockchain")
 	fmt.Println(" listaddresses - print all the addressses in wallet.dat file")
+	fmt.Println(" startnode -mineraddress - start blockchain node")
 }
 
 func (cli *CLI) validateArgs() {
@@ -37,12 +38,14 @@ func (cli *CLI) Run() {
 	getBalanceCmd := flag.NewFlagSet("getbalance", flag.ExitOnError)
 	printChainCmd := flag.NewFlagSet("printchain", flag.ExitOnError)
 	listAddressesCmd := flag.NewFlagSet("listaddrs", flag.ExitOnError)
+	startNodeCmd := flag.NewFlagSet("startnode", flag.ExitOnError)
 
 	newBlockchainData := newBlockchainCmd.String("address", "", "Address")
 	getBalanceData := getBalanceCmd.String("address", "", "Address")
 	fromAddressData := sendCoinsCmd.String("from", "", "From address")
 	toAddressData := sendCoinsCmd.String("to", "", "To address")
 	amountData := sendCoinsCmd.Int("amount", 0, "Amount")
+	startNodeMiner := startNodeCmd.String("miner", "", "Enable mining mode and send reward to ADDRESS")
 
 	switch os.Args[1] {
 	case "createwallet":
@@ -96,6 +99,18 @@ func (cli *CLI) Run() {
 			log.Panic(err)
 		}
 		cli.listaddresses()
+	case "startnode":
+		nodeID := os.Getenv("NODE_ID")
+		err := startNodeCmd.Parse(os.Args[2:])
+		if err != nil {
+			log.Panic(err)
+		}
+
+		if *startNodeMiner == "" {
+			startNodeCmd.Usage()
+			os.Exit(1)
+		}
+		cli.startNode(nodeID, *startNodeMiner)
 	default:
 		cli.printUsage()
 		os.Exit(1)

@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/hex"
+	"log"
 
 	"github.com/boltdb/bolt"
 
@@ -23,7 +24,9 @@ func (u UTXOSet) Reindex() {
 
 	err := db.Update(func(tx *bolt.Tx) error {
 		err := tx.DeleteBucket(bucket)
-		utils.CheckError(err)
+		if err != nil && err != bolt.ErrBucketNotFound {
+			log.Panic(err)
+		}
 		_, err = tx.CreateBucket(bucket)
 		utils.CheckError(err)
 		return nil
