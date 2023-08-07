@@ -12,7 +12,7 @@ func (cli *CLI) createWallet() {
 	wallets, _ := wallet.NewWallets()
 	address := wallets.CreateWallet()
 
-	fmt.Printf("Your new address: %s\n", address)
+	fmt.Printf("%s", address)
 }
 
 // listaddresses ..

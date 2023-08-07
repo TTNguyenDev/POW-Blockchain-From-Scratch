@@ -23,7 +23,7 @@ func (cli *CLI) getBalance(address string) {
 		balance += out.Value
 	}
 
-	fmt.Printf("Balance of %s: %d\n", address, balance)
+	fmt.Printf("%d", balance)
 }
 
 // sendCoins ...
