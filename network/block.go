@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"log"
 
 	"blockchain_from_scratch/blockchain"
 	"blockchain_from_scratch/utils"
@@ -26,7 +25,7 @@ func handleBlock(request []byte, bc *blockchain.Blockchain) {
 	buff.Write(request[commandLength:])
 	dec := gob.NewDecoder(&buff)
 	err := dec.Decode(&payload)
-	log.Panic(err)
+	utils.CheckError(err)
 
 	blockData := payload.Block
 	block := blockchain.DeserializeBlock(blockData)

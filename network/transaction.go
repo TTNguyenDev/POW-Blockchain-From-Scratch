@@ -5,7 +5,6 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"fmt"
-	"log"
 
 	"blockchain_from_scratch/blockchain"
 	"blockchain_from_scratch/blockchain/transaction"
@@ -24,7 +23,7 @@ func handleTx(request []byte, bc *blockchain.Blockchain) {
 	buff.Write(request[commandLength:])
 	dec := gob.NewDecoder(&buff)
 	err := dec.Decode(&payload)
-	log.Panic(err)
+	utils.CheckError(err)
 
 	txData := payload.Transaction
 	tx := transaction.DeserializeTx(txData)
