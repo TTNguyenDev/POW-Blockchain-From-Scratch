@@ -50,7 +50,7 @@ func NewCoinbaseTX(to, data string) *Transaction {
 
 	txout := NewTxOutput(subsidy, to)
 	tx := Transaction{nil, []TXInput{txin}, []TXOutput{*txout}}
-	tx.Hash()
+	tx.ID = tx.Hash()
 
 	return &tx
 }

@@ -294,7 +294,7 @@ func NewUTXOTransaction(from, to string, amount int, u *UTXOSet) *transaction.Tr
 	}
 
 	tx := transaction.Transaction{ID: nil, Vin: inputs, Vout: outputs}
-	tx.Hash()
+	tx.ID = tx.Hash()
 	u.Bc.SignTransaction(&tx, fromWallet.PrivateKey)
 
 	return &tx
