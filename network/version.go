@@ -3,7 +3,6 @@ package network
 import (
 	"bytes"
 	"encoding/gob"
-	"log"
 
 	"blockchain_from_scratch/blockchain"
 	"blockchain_from_scratch/utils"
@@ -30,7 +29,7 @@ func handleVersion(request []byte, bc *blockchain.Blockchain) {
 	buff.Write(request[commandLength:])
 	dec := gob.NewDecoder(&buff)
 	err := dec.Decode(&payload)
-	log.Panic(err)
+	utils.CheckError(err)
 
 	bestHeight := bc.GetBestHeight()
 	foreignerBestHeight := payload.BestHeight

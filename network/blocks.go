@@ -5,7 +5,6 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"fmt"
-	"log"
 
 	"blockchain_from_scratch/blockchain"
 	"blockchain_from_scratch/utils"
@@ -22,7 +21,7 @@ func handleGetBlocks(request []byte, bc *blockchain.Blockchain) {
 	buff.Write(request[commandLength:])
 	dec := gob.NewDecoder(&buff)
 	err := dec.Decode(&payload)
-	log.Panic(err)
+	utils.CheckError(err)
 
 	blocks := bc.GetBlockHashes()
 	sendInv(payload.AddrFrom, "block", blocks)
@@ -35,7 +34,7 @@ func handleInv(request []byte, bc *blockchain.Blockchain) {
 	buff.Write(request[commandLength:])
 	dec := gob.NewDecoder(&buff)
 	err := dec.Decode(&payload)
-	log.Panic(err)
+	utils.CheckError(err)
 	fmt.Printf("Received inventory with %d %s\n", len(payload.Items), payload.Type)
 
 	if payload.Type == "block" {

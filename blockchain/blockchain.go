@@ -74,24 +74,20 @@ func NewBlockchain(benefician string) *Blockchain {
 	db, err := bolt.Open(dbFile, 0600, nil)
 	utils.CheckError(err)
 
+	coinbaseTx := transaction.NewCoinbaseTX(benefician, "")
+	genesis := NewGenesisBlock(coinbaseTx)
+
 	err = db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(blocksBuket))
 
-		if b != nil {
-			tip = b.Get([]byte("l")) //Last block hash
-		} else {
-			coinbaseTx := transaction.NewCoinbaseTX(benefician, "")
-			genesis := NewGenesisBlock(coinbaseTx)
-			b, err := tx.CreateBucket([]byte(blocksBuket))
-			utils.CheckError(err)
-			err = b.Put(genesis.Hash, utils.GobEncode(genesis))
+		b, err := tx.CreateBucket([]byte(blocksBuket))
+		utils.CheckError(err)
+		err = b.Put(genesis.Hash, utils.GobEncode(genesis))
 
-			utils.CheckError(err)
-			err = b.Put([]byte("l"), genesis.Hash)
+		utils.CheckError(err)
+		err = b.Put([]byte("l"), genesis.Hash)
 
-			utils.CheckError(err)
-			tip = genesis.Hash
-		}
+		utils.CheckError(err)
+		tip = genesis.Hash
 		return nil
 	})
 	utils.CheckError(err)
@@ -166,6 +162,7 @@ func (bc *Blockchain) FindUTXO() map[string][]transaction.TXOutput {
 				}
 				outs := UTXO[txID]
 				outs = append(outs, out)
+				UTXO[txID] = outs
 			}
 
 			if !tx.IsCoinBase() {
@@ -297,7 +294,7 @@ func NewUTXOTransaction(from, to string, amount int, u *UTXOSet) *transaction.Tr
 	}
 
 	tx := transaction.Transaction{ID: nil, Vin: inputs, Vout: outputs}
-	tx.SetID()
+	tx.Hash()
 	u.Bc.SignTransaction(&tx, fromWallet.PrivateKey)
 
 	return &tx

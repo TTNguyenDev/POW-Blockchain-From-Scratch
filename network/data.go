@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/hex"
-	"log"
 
 	"blockchain_from_scratch/blockchain"
 	"blockchain_from_scratch/utils"
@@ -23,11 +22,11 @@ func handleGetData(request []byte, bc *blockchain.Blockchain) {
 	buff.Write(request[commandLength:])
 	dec := gob.NewDecoder(&buff)
 	err := dec.Decode(&payload)
-	log.Panic(err)
+	utils.CheckError(err)
 
 	if payload.Type == "block" {
 		block, err := bc.GetBlock([]byte(payload.ID))
-		log.Panic(err)
+		utils.CheckError(err)
 		sendBlock(payload.AddrFrom, &block)
 	}
 
