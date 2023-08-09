@@ -1,14 +1,6 @@
 
 #!/bin/bash
 
-# Add execute permissions 
-chmod +x ./scripts/clean.sh
-chmod +x ./scripts/build.sh
-
-# Build
-./scripts/clean.sh
-./scripts/build.sh
-
 # Run 
 CENTRAL_NODE=$(./main createwallet)
 echo "Your wallet is: $CENTRAL_NODE"
