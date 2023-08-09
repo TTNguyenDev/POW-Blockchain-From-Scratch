@@ -35,5 +35,6 @@ else
     echo "Wallet 2 address is: $WALLET_2"
     ./main sendcoins -from $CENTRAL_NODE -to $WALLET_2 -amount 10
 
-    ./main startnode
+    export NODE_ID=3000
+    ./main startnode -miner $CENTRAL_NODE 
 fi

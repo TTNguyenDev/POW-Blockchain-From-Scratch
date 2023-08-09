@@ -26,14 +26,14 @@ var mempool = make(map[string]transaction.Transaction)
 // StartServer ..
 func StartServer(nodeID, minerAddress string) {
 	nodeAddress = fmt.Sprintf("localhost:%s", nodeID)
-	miningAddress := minerAddress
+	// miningAddress := minerAddress
 	listner, err := net.Listen(protocol, nodeAddress)
 	if err != nil {
 		log.Panic(err)
 	}
 	defer listner.Close()
 
-	bc := blockchain.NewBlockchain(miningAddress) //TODO: Start with nodeID
+	bc := blockchain.BCInstance() //TODO: Start with nodeID
 
 	if nodeAddress != knownNodes[0] {
 		sendVersion(knownNodes[0], bc)
