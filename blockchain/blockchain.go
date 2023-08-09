@@ -336,7 +336,21 @@ func (bc *Blockchain) AddBlock(block *Block) {
 
 // GetBestHeight ..
 func (bc Blockchain) GetBestHeight() int {
-	return 10 //TODO: We need to read bestheight from db
+	var lastBlock Block
+
+	err := bc.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(blocksBuket))
+		lastHash := b.Get([]byte("l"))
+		blockData := b.Get(lastHash)
+		lastBlock = *DeserializeBlock(blockData)
+
+		return nil
+	})
+	if err != nil {
+		log.Panic(err)
+	}
+
+	return lastBlock.Height
 }
 
 // GetBlockHashes ..
